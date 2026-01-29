@@ -46,6 +46,8 @@ COPY main.py .
 COPY routers/ ./routers/
 COPY rag/ ./rag/
 COPY services/ ./services/
+COPY start.sh ./start.sh
+RUN chmod +x start.sh
 
 # Create necessary directories
 RUN mkdir -p chroma_db
