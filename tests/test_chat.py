@@ -38,3 +38,5 @@ def test_chat_message_no_documents(client, mock_anthropic_client):
         assert "I don't have any relevant documents" in data["response"]
 
 
+
+

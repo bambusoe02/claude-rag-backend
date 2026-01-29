@@ -22,11 +22,13 @@ async def list_documents(request: Request) -> Dict[str, Any]:
         if results['metadatas']:
             for i, metadata in enumerate(results['metadatas']):
                 filename = metadata.get('filename', 'unknown')
+                doc_id = metadata.get('doc_id', '')
                 if filename not in documents:
                     documents[filename] = {
                         "filename": filename,
                         "file_type": metadata.get('file_type', 'unknown'),
-                        "chunks": 0
+                        "chunks": 0,
+                        "doc_id": doc_id
                     }
                 documents[filename]["chunks"] += 1
         

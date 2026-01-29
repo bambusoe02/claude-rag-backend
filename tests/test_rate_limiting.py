@@ -41,3 +41,5 @@ def test_rate_limiting_documents_stats(client):
     # Should work (limit is 30/minute, very high)
     assert response.status_code in [200, 500]
 
+
+

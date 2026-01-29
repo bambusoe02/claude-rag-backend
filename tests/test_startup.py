@@ -40,3 +40,5 @@ def test_startup_with_all_env_vars():
     except ValueError:
         pytest.fail("Startup should not fail when all env vars are set")
 
+
+
