@@ -17,4 +17,9 @@ chroma_db/
 *_STATUS*.md
 *STATUS*.md
 COMPREHENSIVE_*.md
+DEBUG_*.md
+*DEBUG*.md
+CHECK_*.md
+HOW_TO_*.md
+REDEPLOY_*.md
 
