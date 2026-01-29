@@ -1,13 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from anthropic import Anthropic
-import chromadb
 import os
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+# Log startup info
+import sys
+print("Starting FastAPI application...", file=sys.stderr)
+print(f"Python version: {sys.version}", file=sys.stderr)
+print(f"Working directory: {os.getcwd()}", file=sys.stderr)
 
 app = FastAPI(
     title="Claude RAG API",
@@ -25,6 +29,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Health check endpoint for Railway (must work even if other services fail)
+@app.get("/health")
+async def health():
+    """Health check endpoint for Railway deployment."""
+    return JSONResponse(
+        status_code=200,
+        content={"status": "healthy", "service": "claude-rag-api"}
+    )
+
+@app.get("/")
+async def root():
+    return {
+        "status": "Claude RAG API running",
+        "version": "1.0.0",
+        "model": "claude-sonnet-4-20250514"
+    }
+
 # Initialize clients (lazy - will be created when needed)
 anthropic_client = None
 chroma_client = None
@@ -34,6 +55,7 @@ def get_anthropic_client():
     """Get or create Anthropic client"""
     global anthropic_client
     if anthropic_client is None:
+        from anthropic import Anthropic
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY environment variable is not set")
@@ -44,26 +66,10 @@ def get_chroma_collection():
     """Get or create ChromaDB collection"""
     global chroma_client, collection
     if chroma_client is None:
+        import chromadb
         chroma_client = chromadb.PersistentClient(path="./chroma_db")
         collection = chroma_client.get_or_create_collection(name="documents")
     return collection
-
-@app.get("/")
-async def root():
-    return {
-        "status": "Claude RAG API running",
-        "version": "1.0.0",
-        "model": "claude-sonnet-4-20250514"
-    }
-
-# Health check endpoint for Railway (must work even if other services fail)
-@app.get("/health")
-async def health():
-    """Health check endpoint for Railway deployment."""
-    return JSONResponse(
-        status_code=200,
-        content={"status": "healthy", "service": "claude-rag-api"}
-    )
 
 # Import routers (after health check is defined)
 try:
@@ -73,7 +79,9 @@ try:
     app.include_router(documents.router)
 except Exception as e:
     # Log error but don't crash - health check should still work
+    import traceback
     print(f"Warning: Failed to import routers: {str(e)}")
+    traceback.print_exc()
 
 if __name__ == "__main__":
     import uvicorn
