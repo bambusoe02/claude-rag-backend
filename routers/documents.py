@@ -1,11 +1,15 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from typing import List, Dict, Any
 from rag.chroma_client import get_chroma_collection
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
+limiter = Limiter(key_func=get_remote_address)
 
 @router.get("/list")
-async def list_documents() -> Dict[str, Any]:
+@limiter.limit("30/minute")
+async def list_documents(request: Request) -> Dict[str, Any]:
     """List all uploaded documents"""
     
     try:
@@ -36,10 +40,16 @@ async def list_documents() -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Error listing documents: {str(e)}")
 
 @router.delete("/{doc_id}")
-async def delete_document(doc_id: str) -> Dict[str, Any]:
+@limiter.limit("20/minute")
+async def delete_document(request: Request, doc_id: str) -> Dict[str, Any]:
     """Delete a document by ID"""
     
+    # Validate input
+    if not doc_id or not doc_id.strip():
+        raise HTTPException(status_code=400, detail="Document ID is required")
+    
     try:
+        collection = get_chroma_collection()
         # Get all IDs that match the doc_id prefix
         results = collection.get()
         ids_to_delete = []
@@ -67,10 +77,12 @@ async def delete_document(doc_id: str) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Error deleting document: {str(e)}")
 
 @router.get("/stats")
-async def get_stats() -> Dict[str, Any]:
+@limiter.limit("30/minute")
+async def get_stats(request: Request) -> Dict[str, Any]:
     """Get statistics about the document collection"""
     
     try:
+        collection = get_chroma_collection()
         results = collection.get()
         total_chunks = len(results['ids']) if results['ids'] else 0
         

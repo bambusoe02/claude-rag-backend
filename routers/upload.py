@@ -1,4 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Request
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
 from services.parser import parse_document
 from services.chunker import chunk_text
 from rag.embeddings import get_embeddings
@@ -10,9 +12,11 @@ from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/upload", tags=["upload"])
+limiter = Limiter(key_func=get_remote_address)
 
 @router.post("/document")
-async def upload_document(file: UploadFile = File(...)) -> Dict[str, Any]:
+@limiter.limit("5/minute")
+async def upload_document(request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:
     """Upload and process document for RAG"""
     
     try:

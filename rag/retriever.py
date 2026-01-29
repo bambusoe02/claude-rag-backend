@@ -2,10 +2,6 @@ from rag.embeddings import get_embeddings
 from rag.chroma_client import get_chroma_collection
 from typing import List, Dict, Any
 
-# Initialize ChromaDB client
-chroma_client = chromadb.PersistentClient(path="./chroma_db")
-collection = chroma_client.get_or_create_collection(name="documents")
-
 async def retrieve_relevant_chunks(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
     """Retrieve most relevant chunks for query"""
     

@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import os
 import sys
 from dotenv import load_dotenv
@@ -29,6 +32,11 @@ app = FastAPI(
     description="Production-ready RAG chatbot using Claude API",
     version="1.0.0"
 )
+
+# Rate limiting
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS for Next.js frontend
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
@@ -73,6 +81,21 @@ def get_anthropic_client():
 
 # ChromaDB client is now managed by rag.chroma_client module
 from rag.chroma_client import get_chroma_collection
+
+# Validate required environment variables at startup
+@app.on_event("startup")
+async def startup_event():
+    """Validate required environment variables on startup"""
+    required_vars = ["ANTHROPIC_API_KEY", "OPENAI_API_KEY"]
+    missing = [var for var in required_vars if not os.getenv(var)]
+    if missing:
+        error_msg = f"Missing required environment variables: {', '.join(missing)}"
+        logger.error(error_msg)
+        logger.error("Please set these variables in your .env file or environment")
+        # Don't raise - allow health check to work, but log error
+        logger.warning("Application started but may not function correctly without required API keys")
+    else:
+        logger.info("✅ All required environment variables are set")
 
 # Import routers (after health check is defined)
 try:
