@@ -1,32 +1,35 @@
-from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 from typing import List
+import os
 import asyncio
 
-# Initialize model (lazy loading)
-_model = None
-
-def _get_model():
-    """Lazy load the embedding model"""
-    global _model
-    if _model is None:
-        _model = SentenceTransformer('all-MiniLM-L6-v2')
-    return _model
+# Initialize OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 async def get_embeddings(texts: List[str]) -> List[List[float]]:
-    """Generate embeddings for text chunks"""
+    """Generate embeddings using OpenAI API"""
     
     if not texts:
         return []
     
-    # Run in thread pool to avoid blocking
-    loop = asyncio.get_event_loop()
-    model = _get_model()
+    if not client.api_key:
+        raise ValueError("OPENAI_API_KEY environment variable is not set")
     
-    # Generate embeddings
-    embeddings = await loop.run_in_executor(
-        None,
-        lambda: model.encode(texts, show_progress_bar=False)
-    )
+    try:
+        # Run synchronous OpenAI call in thread pool to avoid blocking
+        loop = asyncio.get_event_loop()
+        
+        def _create_embeddings():
+            response = client.embeddings.create(
+                model="text-embedding-3-small",
+                input=texts
+            )
+            return [item.embedding for item in response.data]
+        
+        # Execute in thread pool
+        embeddings = await loop.run_in_executor(None, _create_embeddings)
+        return embeddings
     
-    return embeddings.tolist()
+    except Exception as e:
+        raise Exception(f"Error generating embeddings: {str(e)}")
 
