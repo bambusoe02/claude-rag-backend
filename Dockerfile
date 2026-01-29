@@ -43,9 +43,11 @@ COPY --from=builder /usr/local /usr/local
 
 # Copy application code (only necessary files)
 COPY main.py .
+COPY config.py .
 COPY routers/ ./routers/
 COPY rag/ ./rag/
 COPY services/ ./services/
+COPY lib/ ./lib/
 COPY start.sh ./start.sh
 RUN chmod +x start.sh
 
