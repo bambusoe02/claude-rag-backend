@@ -1,15 +1,11 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any
 import chromadb
-import os
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
-# Get ChromaDB path from environment variable (for Railway Volume support)
-chroma_db_path = os.getenv("CHROMA_DB_PATH", "./chroma_db")
-
 # Initialize ChromaDB client
-chroma_client = chromadb.PersistentClient(path=chroma_db_path)
+chroma_client = chromadb.PersistentClient(path="./chroma_db")
 collection = chroma_client.get_or_create_collection(name="documents")
 
 @router.get("/list")

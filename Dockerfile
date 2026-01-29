@@ -47,8 +47,8 @@ COPY routers/ ./routers/
 COPY rag/ ./rag/
 COPY services/ ./services/
 
-# Note: chroma_db will be created at runtime or mounted via Railway Volume
-# No need to create it in the image to reduce size
+# Create necessary directories
+RUN mkdir -p chroma_db
 
 # Expose port
 EXPOSE 8000
@@ -56,5 +56,7 @@ EXPOSE 8000
 # Note: Health check handled by Railway, not Docker HEALTHCHECK
 
 # Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Note: Railway uses startCommand from railway.toml which includes $PORT
+# This CMD is fallback if railway.toml is not used
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
 

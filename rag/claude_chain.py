@@ -2,7 +2,18 @@ from anthropic import Anthropic
 import os
 from typing import List, Dict, Any
 
-client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+# Lazy client initialization
+_client = None
+
+def get_client():
+    """Get or create Anthropic client"""
+    global _client
+    if _client is None:
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise ValueError("ANTHROPIC_API_KEY environment variable is not set")
+        _client = Anthropic(api_key=api_key)
+    return _client
 
 async def generate_response(
     query: str, 
@@ -44,6 +55,7 @@ Answer:"""
     
     try:
         # Call Claude API
+        client = get_client()
         message = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=1500,

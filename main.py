@@ -25,13 +25,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize clients
-anthropic_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+# Initialize clients (lazy - will be created when needed)
+anthropic_client = None
+chroma_client = None
+collection = None
 
-# Get ChromaDB path from environment variable (for Railway Volume support)
-chroma_db_path = os.getenv("CHROMA_DB_PATH", "./chroma_db")
-chroma_client = chromadb.PersistentClient(path=chroma_db_path)
-collection = chroma_client.get_or_create_collection(name="documents")
+def get_anthropic_client():
+    """Get or create Anthropic client"""
+    global anthropic_client
+    if anthropic_client is None:
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise ValueError("ANTHROPIC_API_KEY environment variable is not set")
+        anthropic_client = Anthropic(api_key=api_key)
+    return anthropic_client
+
+def get_chroma_collection():
+    """Get or create ChromaDB collection"""
+    global chroma_client, collection
+    if chroma_client is None:
+        chroma_client = chromadb.PersistentClient(path="./chroma_db")
+        collection = chroma_client.get_or_create_collection(name="documents")
+    return collection
 
 @app.get("/")
 async def root():
@@ -41,7 +56,7 @@ async def root():
         "model": "claude-sonnet-4-20250514"
     }
 
-# Health check endpoint for Railway
+# Health check endpoint for Railway (must work even if other services fail)
 @app.get("/health")
 async def health():
     """Health check endpoint for Railway deployment."""
@@ -50,11 +65,15 @@ async def health():
         content={"status": "healthy", "service": "claude-rag-api"}
     )
 
-# Import routers
-from routers import upload, chat, documents
-app.include_router(upload.router)
-app.include_router(chat.router)
-app.include_router(documents.router)
+# Import routers (after health check is defined)
+try:
+    from routers import upload, chat, documents
+    app.include_router(upload.router)
+    app.include_router(chat.router)
+    app.include_router(documents.router)
+except Exception as e:
+    # Log error but don't crash - health check should still work
+    print(f"Warning: Failed to import routers: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
