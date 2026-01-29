@@ -1,0 +1,53 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from anthropic import Anthropic
+import chromadb
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+app = FastAPI(
+    title="Claude RAG API",
+    description="Production-ready RAG chatbot using Claude API",
+    version="1.0.0"
+)
+
+# CORS for Next.js frontend
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Initialize clients
+anthropic_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+chroma_client = chromadb.PersistentClient(path="./chroma_db")
+collection = chroma_client.get_or_create_collection(name="documents")
+
+@app.get("/")
+async def root():
+    return {
+        "status": "Claude RAG API running",
+        "version": "1.0.0",
+        "model": "claude-sonnet-4-20250514"
+    }
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
+
+# Import routers
+from routers import upload, chat, documents
+app.include_router(upload.router)
+app.include_router(chat.router)
+app.include_router(documents.router)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
