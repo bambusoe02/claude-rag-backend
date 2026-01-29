@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from anthropic import Anthropic
 import chromadb
 import os
@@ -37,9 +38,14 @@ async def root():
         "model": "claude-sonnet-4-20250514"
     }
 
+# Health check endpoint for Railway
 @app.get("/health")
 async def health():
-    return {"status": "healthy"}
+    """Health check endpoint for Railway deployment."""
+    return JSONResponse(
+        status_code=200,
+        content={"status": "healthy", "service": "claude-rag-api"}
+    )
 
 # Import routers
 from routers import upload, chat, documents

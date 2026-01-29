@@ -1,18 +1,49 @@
-__pycache__
-*.pyc
-*.pyo
-*.pyd
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 .Python
 venv/
 env/
-.env
+ENV/
 .venv
+
+# ChromaDB
 chroma_db/
 *.db
-*.log
-.DS_Store
-.git
-.gitignore
-README.md
-sample-docs/
+*.sqlite
 
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Railway
+.railway/
+
+# Sample docs (optional - remove if you want them in image)
+# sample-docs/
