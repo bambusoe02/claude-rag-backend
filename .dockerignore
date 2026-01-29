@@ -45,5 +45,15 @@ Thumbs.db
 # Railway
 .railway/
 
-# Sample docs (optional - remove if you want them in image)
-# sample-docs/
+# Sample docs (exclude to reduce build context)
+sample-docs/
+
+# Test files
+tests/
+test_*.py
+*_test.py
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
