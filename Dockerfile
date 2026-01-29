@@ -47,8 +47,8 @@ COPY routers/ ./routers/
 COPY rag/ ./rag/
 COPY services/ ./services/
 
-# Create necessary directories
-RUN mkdir -p chroma_db
+# Note: chroma_db will be created at runtime or mounted via Railway Volume
+# No need to create it in the image to reduce size
 
 # Expose port
 EXPOSE 8000

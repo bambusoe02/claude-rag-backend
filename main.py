@@ -27,7 +27,10 @@ app.add_middleware(
 
 # Initialize clients
 anthropic_client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-chroma_client = chromadb.PersistentClient(path="./chroma_db")
+
+# Get ChromaDB path from environment variable (for Railway Volume support)
+chroma_db_path = os.getenv("CHROMA_DB_PATH", "./chroma_db")
+chroma_client = chromadb.PersistentClient(path=chroma_db_path)
 collection = chroma_client.get_or_create_collection(name="documents")
 
 @app.get("/")
