@@ -34,15 +34,19 @@ def _get_embedding_model():
     # Fallback to sentence-transformers (local, free, no API key needed)
     try:
         from sentence_transformers import SentenceTransformer
-        _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        logger.info("Initializing sentence-transformers model (this may take a moment on first run)...")
+        _embedding_model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
         _use_openai = False
-        logger.info("Using sentence-transformers (local embeddings, no API key required)")
+        logger.info("✅ Using sentence-transformers (local embeddings, no API key required)")
         return _embedding_model, _use_openai
-    except ImportError:
-        logger.error("sentence-transformers not installed. Install with: pip install sentence-transformers")
+    except ImportError as e:
+        logger.error(f"sentence-transformers not installed: {e}")
+        logger.error("Install with: pip install sentence-transformers")
         raise ValueError("No embedding model available. Either set OPENAI_API_KEY or install sentence-transformers")
     except Exception as e:
-        logger.error(f"Failed to initialize sentence-transformers: {e}")
+        logger.error(f"Failed to initialize sentence-transformers: {e}", exc_info=True)
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise
 
 async def get_embeddings(texts: List[str]) -> List[List[float]]:
@@ -66,9 +70,12 @@ async def get_embeddings(texts: List[str]) -> List[List[float]]:
                     return [item.embedding for item in response.data]
                 else:
                     # Use sentence-transformers (local)
+                    logger.debug(f"Generating embeddings for {len(texts)} texts using sentence-transformers")
                     embeddings = model.encode(texts, convert_to_numpy=False, show_progress_bar=False)
                     # Convert to list of lists
-                    return [emb.tolist() if hasattr(emb, 'tolist') else list(emb) for emb in embeddings]
+                    result = [emb.tolist() if hasattr(emb, 'tolist') else list(emb) for emb in embeddings]
+                    logger.debug(f"Generated {len(result)} embeddings, dimension: {len(result[0]) if result else 0}")
+                    return result
             except Exception as e:
                 logger.error(f"Embedding generation error: {str(e)}")
                 raise

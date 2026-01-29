@@ -107,6 +107,10 @@ async def upload_document(request: Request, file: UploadFile = File(...)) -> Dic
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error processing document {file.filename}: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Error processing document. Please try again.")
+        error_msg = str(e)
+        logger.error(f"Error processing document {file.filename}: {error_msg}", exc_info=True)
+        # Include more detail in error message for debugging
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error processing document: {error_msg}")
 
