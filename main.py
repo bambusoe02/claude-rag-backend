@@ -87,7 +87,7 @@ from rag.chroma_client import get_chroma_collection
 @app.on_event("startup")
 async def startup_event():
     """Validate required environment variables on startup"""
-    required_vars = ["ANTHROPIC_API_KEY", "OPENAI_API_KEY"]
+    required_vars = ["ANTHROPIC_API_KEY"]
     missing = [var for var in required_vars if not os.getenv(var)]
     if missing:
         error_msg = f"Missing required environment variables: {', '.join(missing)}"
@@ -97,6 +97,12 @@ async def startup_event():
         logger.warning("Application started but may not function correctly without required API keys")
     else:
         logger.info("✅ All required environment variables are set")
+    
+    # Check for optional OpenAI API key (for embeddings)
+    if os.getenv("OPENAI_API_KEY"):
+        logger.info("✅ OPENAI_API_KEY found - will use OpenAI embeddings")
+    else:
+        logger.info("ℹ️  OPENAI_API_KEY not set - will use sentence-transformers (local, free embeddings)")
 
 # Import routers (after health check is defined)
 try:
