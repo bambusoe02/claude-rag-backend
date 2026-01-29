@@ -1,6 +1,12 @@
 from anthropic import Anthropic
 import os
+import asyncio
+import logging
 from typing import List, Dict, Any
+from config import ANTHROPIC_TIMEOUT, API_MAX_RETRIES
+from lib.retry import retry_with_backoff
+
+logger = logging.getLogger(__name__)
 
 # Lazy client initialization
 _client = None
@@ -12,7 +18,7 @@ def get_client():
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY environment variable is not set")
-        _client = Anthropic(api_key=api_key)
+        _client = Anthropic(api_key=api_key, timeout=ANTHROPIC_TIMEOUT)
     return _client
 
 async def generate_response(
@@ -53,16 +59,41 @@ Instructions:
 
 Answer:"""
     
-    try:
-        # Call Claude API
+    async def _call_claude():
+        """Call Claude API with timeout"""
         client = get_client()
-        message = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1500,
-            temperature=0.3,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
+        loop = asyncio.get_event_loop()
+        
+        def _sync_create():
+            try:
+                return client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=1500,
+                    temperature=0.3,
+                    messages=[
+                        {"role": "user", "content": prompt}
+                    ]
+                )
+            except Exception as e:
+                logger.error(f"Anthropic API error: {str(e)}")
+                raise
+        
+        try:
+            message = await asyncio.wait_for(
+                loop.run_in_executor(None, _sync_create),
+                timeout=ANTHROPIC_TIMEOUT
+            )
+            return message
+        except asyncio.TimeoutError:
+            logger.error(f"Anthropic API timeout after {ANTHROPIC_TIMEOUT} seconds")
+            raise Exception(f"Anthropic API request timed out after {ANTHROPIC_TIMEOUT} seconds")
+    
+    try:
+        # Call Claude API with retry logic
+        message = await retry_with_backoff(
+            _call_claude,
+            max_retries=API_MAX_RETRIES,
+            exceptions=(Exception,)
         )
         
         answer = message.content[0].text
@@ -84,5 +115,6 @@ Answer:"""
         }
         
     except Exception as e:
+        logger.error(f"Failed to call Claude API after retries: {str(e)}")
         raise Exception(f"Error calling Claude API: {str(e)}")
 

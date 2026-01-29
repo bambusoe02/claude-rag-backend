@@ -1,5 +1,5 @@
-import chromadb
 from rag.embeddings import get_embeddings
+from rag.chroma_client import get_chroma_collection
 from typing import List, Dict, Any
 
 # Initialize ChromaDB client
@@ -22,6 +22,7 @@ async def retrieve_relevant_chunks(query: str, top_k: int = 5) -> List[Dict[str,
         query_embedding = query_embeddings[0]
         
         # Search in ChromaDB
+        collection = get_chroma_collection()
         results = collection.query(
             query_embeddings=[query_embedding],
             n_results=min(top_k, 10)  # Limit to 10 max
@@ -44,6 +45,8 @@ async def retrieve_relevant_chunks(query: str, top_k: int = 5) -> List[Dict[str,
         
     except Exception as e:
         # Log error but return empty list to prevent breaking the API
-        print(f"Error retrieving chunks: {str(e)}")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error retrieving chunks: {str(e)}", exc_info=True)
         return []
 

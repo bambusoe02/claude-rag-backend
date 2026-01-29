@@ -2,16 +2,27 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import os
+import sys
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
+# Configure logging
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
 # Log startup info
-import sys
-print("Starting FastAPI application...", file=sys.stderr)
-print(f"Python version: {sys.version}", file=sys.stderr)
-print(f"Working directory: {os.getcwd()}", file=sys.stderr)
+logger.info("Starting FastAPI application...")
+logger.info(f"Python version: {sys.version}")
+logger.info(f"Working directory: {os.getcwd()}")
 
 app = FastAPI(
     title="Claude RAG API",
@@ -48,8 +59,6 @@ async def root():
 
 # Initialize clients (lazy - will be created when needed)
 anthropic_client = None
-chroma_client = None
-collection = None
 
 def get_anthropic_client():
     """Get or create Anthropic client"""
@@ -62,14 +71,8 @@ def get_anthropic_client():
         anthropic_client = Anthropic(api_key=api_key)
     return anthropic_client
 
-def get_chroma_collection():
-    """Get or create ChromaDB collection"""
-    global chroma_client, collection
-    if chroma_client is None:
-        import chromadb
-        chroma_client = chromadb.PersistentClient(path="./chroma_db")
-        collection = chroma_client.get_or_create_collection(name="documents")
-    return collection
+# ChromaDB client is now managed by rag.chroma_client module
+from rag.chroma_client import get_chroma_collection
 
 # Import routers (after health check is defined)
 try:
@@ -80,8 +83,8 @@ try:
 except Exception as e:
     # Log error but don't crash - health check should still work
     import traceback
-    print(f"Warning: Failed to import routers: {str(e)}")
-    traceback.print_exc()
+    logger.warning(f"Failed to import routers: {str(e)}")
+    logger.debug(traceback.format_exc())
 
 if __name__ == "__main__":
     import uvicorn

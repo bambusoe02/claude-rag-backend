@@ -1,12 +1,5 @@
-import chromadb
 from typing import List, Dict, Any
-
-# Initialize ChromaDB client
-chroma_client = chromadb.PersistentClient(path="./chroma_db")
-collection = chroma_client.get_or_create_collection(
-    name="documents",
-    metadata={"hnsw:space": "cosine"}
-)
+from rag.chroma_client import get_chroma_collection
 
 async def store_documents(
     doc_id: str, 
@@ -30,6 +23,7 @@ async def store_documents(
     ]
     
     # Add to collection
+    collection = get_chroma_collection()
     collection.add(
         ids=ids,
         documents=chunks,

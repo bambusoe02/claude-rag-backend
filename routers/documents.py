@@ -1,12 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any
-import chromadb
+from rag.chroma_client import get_chroma_collection
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
-
-# Initialize ChromaDB client
-chroma_client = chromadb.PersistentClient(path="./chroma_db")
-collection = chroma_client.get_or_create_collection(name="documents")
 
 @router.get("/list")
 async def list_documents() -> Dict[str, Any]:
@@ -14,6 +10,7 @@ async def list_documents() -> Dict[str, Any]:
     
     try:
         # Get all documents from collection
+        collection = get_chroma_collection()
         results = collection.get()
         
         # Extract unique documents by filename

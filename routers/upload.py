@@ -3,9 +3,12 @@ from services.parser import parse_document
 from services.chunker import chunk_text
 from rag.embeddings import get_embeddings
 from rag.vector_store import store_documents
+from config import MAX_FILE_SIZE, ALLOWED_EXTENSIONS, ALLOWED_MIME_TYPES, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP
 import uuid
+import logging
 from typing import Dict, Any
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/upload", tags=["upload"])
 
 @router.post("/document")
@@ -13,13 +16,37 @@ async def upload_document(file: UploadFile = File(...)) -> Dict[str, Any]:
     """Upload and process document for RAG"""
     
     try:
-        # Validate file type
-        allowed_extensions = ['.pdf', '.txt', '.md', '.docx']
-        if not any(file.filename.endswith(ext) for ext in allowed_extensions):
+        # Validate file extension
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="Filename is required")
+        
+        if not any(file.filename.lower().endswith(ext) for ext in ALLOWED_EXTENSIONS):
             raise HTTPException(
                 status_code=400,
-                detail=f"Unsupported file type. Allowed: {', '.join(allowed_extensions)}"
+                detail=f"Unsupported file type. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
             )
+        
+        # Validate MIME type
+        if file.content_type and file.content_type not in ALLOWED_MIME_TYPES:
+            logger.warning(f"File {file.filename} has unexpected MIME type: {file.content_type}")
+            # Don't reject based on MIME type alone, extension check is primary
+        
+        # Validate file size
+        file_content = await file.read()
+        file_size = len(file_content)
+        
+        if file_size > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File size ({file_size / 1024 / 1024:.2f}MB) exceeds maximum allowed size ({MAX_FILE_SIZE / 1024 / 1024:.2f}MB)"
+            )
+        
+        if file_size == 0:
+            raise HTTPException(status_code=400, detail="File is empty")
+        
+        # Reset file pointer for parsing
+        from io import BytesIO
+        file.file = BytesIO(file_content)
         
         # 1. Parse document
         content = await parse_document(file)
@@ -31,7 +58,7 @@ async def upload_document(file: UploadFile = File(...)) -> Dict[str, Any]:
             )
         
         # 2. Chunk text
-        chunks = chunk_text(content, chunk_size=1000, overlap=200)
+        chunks = chunk_text(content, chunk_size=DEFAULT_CHUNK_SIZE, overlap=DEFAULT_CHUNK_OVERLAP)
         
         if not chunks:
             raise HTTPException(
@@ -62,5 +89,6 @@ async def upload_document(file: UploadFile = File(...)) -> Dict[str, Any]:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
+        logger.error(f"Error processing document {file.filename}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Error processing document. Please try again.")
 
