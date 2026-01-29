@@ -12,10 +12,15 @@ limiter = Limiter(key_func=get_remote_address)
 async def list_documents(request: Request) -> Dict[str, Any]:
     """List all uploaded documents"""
     
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info("[DOCUMENTS] List documents request received")
+    
     try:
         # Get all documents from collection
         collection = get_chroma_collection()
         results = collection.get()
+        logger.info(f"[DOCUMENTS] Collection has {len(results.get('ids', []))} total chunks")
         
         # Extract unique documents by filename
         documents = {}
@@ -32,13 +37,16 @@ async def list_documents(request: Request) -> Dict[str, Any]:
                     }
                 documents[filename]["chunks"] += 1
         
-        return {
+        result = {
             "success": True,
             "count": len(documents),
             "documents": list(documents.values())
         }
+        logger.info(f"[DOCUMENTS] Returning {len(documents)} unique documents")
+        return result
         
     except Exception as e:
+        logger.error(f"[DOCUMENTS] Error listing documents: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error listing documents: {str(e)}")
 
 @router.delete("/{doc_id}")

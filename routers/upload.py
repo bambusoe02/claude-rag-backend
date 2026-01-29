@@ -19,9 +19,14 @@ limiter = Limiter(key_func=get_remote_address)
 async def upload_document(request: Request, file: UploadFile = File(...)) -> Dict[str, Any]:
     """Upload and process document for RAG"""
     
+    logger.info(f"[UPLOAD] Received upload request for file: {file.filename}")
+    logger.info(f"[UPLOAD] Content type: {file.content_type}")
+    logger.info(f"[UPLOAD] Request origin: {request.headers.get('origin', 'unknown')}")
+    
     try:
         # Validate file extension
         if not file.filename:
+            logger.error("[UPLOAD] Filename is missing")
             raise HTTPException(status_code=400, detail="Filename is required")
         
         if not any(file.filename.lower().endswith(ext) for ext in ALLOWED_EXTENSIONS):
@@ -38,6 +43,7 @@ async def upload_document(request: Request, file: UploadFile = File(...)) -> Dic
         # Validate file size
         file_content = await file.read()
         file_size = len(file_content)
+        logger.info(f"[UPLOAD] File size: {file_size} bytes ({file_size / 1024 / 1024:.2f} MB)")
         
         if file_size > MAX_FILE_SIZE:
             raise HTTPException(
@@ -53,7 +59,9 @@ async def upload_document(request: Request, file: UploadFile = File(...)) -> Dic
         file.file = BytesIO(file_content)
         
         # 1. Parse document
+        logger.info("[UPLOAD] Parsing document...")
         content = await parse_document(file)
+        logger.info(f"[UPLOAD] Parsed content length: {len(content)} characters")
         
         if not content or len(content.strip()) == 0:
             raise HTTPException(
@@ -62,7 +70,9 @@ async def upload_document(request: Request, file: UploadFile = File(...)) -> Dic
             )
         
         # 2. Chunk text
+        logger.info("[UPLOAD] Chunking text...")
         chunks = chunk_text(content, chunk_size=DEFAULT_CHUNK_SIZE, overlap=DEFAULT_CHUNK_OVERLAP)
+        logger.info(f"[UPLOAD] Created {len(chunks)} chunks")
         
         if not chunks:
             raise HTTPException(
@@ -71,16 +81,20 @@ async def upload_document(request: Request, file: UploadFile = File(...)) -> Dic
             )
         
         # 3. Generate embeddings
+        logger.info("[UPLOAD] Generating embeddings...")
         embeddings = await get_embeddings(chunks)
+        logger.info(f"[UPLOAD] Generated {len(embeddings)} embeddings")
         
         # 4. Store in vector DB
         doc_id = str(uuid.uuid4())
+        logger.info(f"[UPLOAD] Storing document with ID: {doc_id}")
         await store_documents(
             doc_id=doc_id,
             chunks=chunks,
             embeddings=embeddings,
             metadata={"filename": file.filename, "file_type": file.content_type}
         )
+        logger.info(f"[UPLOAD] Document stored successfully. Returning response.")
         
         return {
             "success": True,
