@@ -1,4 +1,4 @@
-# Multi-stage build for faster Railway deployments
+# Multi-stage build optimized for Railway (reduced size + faster builds)
 FROM python:3.11-slim as builder
 
 WORKDIR /app
@@ -17,6 +17,16 @@ COPY requirements.txt .
 # Install all dependencies in one go (faster than splitting)
 # Use --no-build-isolation for faster builds
 RUN pip install --no-cache-dir --no-build-isolation -r requirements.txt
+
+# Clean up pip cache and unnecessary files to reduce image size
+# Remove Python cache files, test files, and documentation (but keep dist-info for package metadata)
+RUN find /usr/local -type d -name __pycache__ -exec rm -r {} + 2>/dev/null || true && \
+    find /usr/local -type f -name "*.pyc" -delete && \
+    find /usr/local -type f -name "*.pyo" -delete && \
+    find /usr/local -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true && \
+    find /usr/local -type d -name "test" -exec rm -rf {} + 2>/dev/null || true && \
+    find /usr/local -type f -name "*.md" -not -path "*/dist-info/*" -delete 2>/dev/null || true && \
+    rm -rf /root/.cache/pip /tmp/* /var/tmp/*
 
 # Production stage - minimal image
 FROM python:3.11-slim
