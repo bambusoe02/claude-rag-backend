@@ -77,6 +77,7 @@ def get_anthropic_client():
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY environment variable is not set")
+        # Only pass api_key - Anthropic 0.39.0 doesn't support additional parameters like proxies
         anthropic_client = Anthropic(api_key=api_key)
     return anthropic_client
 

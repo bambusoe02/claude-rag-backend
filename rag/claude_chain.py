@@ -18,7 +18,9 @@ def get_client():
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY environment variable is not set")
-        _client = Anthropic(api_key=api_key, timeout=ANTHROPIC_TIMEOUT)
+        # Only pass api_key - Anthropic 0.39.0 doesn't support timeout or proxies in constructor
+        # Timeout is handled via asyncio.wait_for in _call_claude()
+        _client = Anthropic(api_key=api_key)
     return _client
 
 async def generate_response(
