@@ -42,6 +42,8 @@ spec:
                 secretKeyRef:
                   name: claude-rag-secrets
                   key: ANTHROPIC_API_KEY
+            - name: CHROMA_DB_PATH
+              value: "/data/chroma_db"
           
           # Resource limits
           resources:
@@ -51,6 +53,11 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
+          
+          # Volume mounts
+          volumeMounts:
+            - name: chroma-data
+              mountPath: /data
           
           # Health checks
           livenessProbe:
@@ -83,6 +90,9 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
+      volumes:
+        - name: chroma-data
+          emptyDir: {}
       
       # Restart policy
       restartPolicy: Always
