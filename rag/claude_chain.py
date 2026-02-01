@@ -18,22 +18,34 @@ def get_client():
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY environment variable is not set")
-        # Temporarily unset proxy environment variables to prevent Anthropic from trying to use them
+        
+        # Temporarily unset proxy environment variables to prevent Anthropic/httpx from using them
         # Anthropic 0.39.0 doesn't support 'proxies' parameter in constructor
+        # httpx (used by Anthropic) auto-detects proxies from env vars, which causes issues
         original_proxies = {}
-        proxy_vars = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'ALL_PROXY', 'all_proxy']
+        proxy_vars = [
+            'HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 
+            'ALL_PROXY', 'all_proxy', 'NO_PROXY', 'no_proxy'
+        ]
+        
         for var in proxy_vars:
             if var in os.environ:
                 original_proxies[var] = os.environ.pop(var)
+                logger.debug(f"Temporarily unset {var} to prevent proxy issues")
         
         try:
             # Only pass api_key - Anthropic 0.39.0 doesn't support timeout or proxies in constructor
             # Timeout is handled via asyncio.wait_for in _call_claude()
             _client = Anthropic(api_key=api_key)
+            logger.info("Anthropic client initialized successfully (proxies disabled)")
+        except Exception as e:
+            logger.error(f"Failed to initialize Anthropic client: {e}")
+            raise
         finally:
             # Restore proxy environment variables if they were set
             for var, value in original_proxies.items():
                 os.environ[var] = value
+                logger.debug(f"Restored {var}")
     return _client
 
 async def generate_response(
