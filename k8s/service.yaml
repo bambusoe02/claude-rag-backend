@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: claude-rag-service
+  namespace: claude-rag
+  labels:
+    app: claude-rag-backend
+spec:
+  type: ClusterIP
+  selector:
+    app: claude-rag-backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      protocol: TCP
+

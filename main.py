@@ -6,6 +6,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import os
 import sys
+from datetime import datetime
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -49,14 +50,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Health check endpoint for Railway (must work even if other services fail)
+# Health check endpoint for Railway and Kubernetes (must work even if other services fail)
 @app.get("/health")
-async def health():
-    """Health check endpoint for Railway deployment."""
-    return JSONResponse(
-        status_code=200,
-        content={"status": "healthy", "service": "claude-rag-api"}
-    )
+async def health_check():
+    """Health check endpoint for Railway and Kubernetes deployments."""
+    return {
+        "status": "healthy",
+        "service": "claude-rag-backend",
+        "version": "1.0.0",
+        "timestamp": datetime.utcnow().isoformat()
+    }
 
 @app.get("/")
 async def root():

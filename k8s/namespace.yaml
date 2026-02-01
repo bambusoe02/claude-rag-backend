@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: claude-rag
+  labels:
+    app: claude-rag
+    environment: production
+

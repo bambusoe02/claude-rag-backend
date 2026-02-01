@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: claude-rag-config
+  namespace: claude-rag
+data:
+  ALLOWED_ORIGINS: "https://claude-rag-frontend.vercel.app,http://localhost:3000"
+  PORT: "8000"
+  LOG_LEVEL: "info"
+  MAX_UPLOAD_SIZE: "10485760"  # 10MB in bytes
+  CHROMA_DB_PATH: "./chroma_db"
+  CHUNK_SIZE: "1000"
+  CHUNK_OVERLAP: "200"
+
