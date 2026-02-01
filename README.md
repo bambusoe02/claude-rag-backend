@@ -1,5 +1,11 @@
 # Claude RAG Backend
 
+[![CI](https://github.com/bambusoe02/claude-rag-backend/workflows/CI/badge.svg)](https://github.com/bambusoe02/claude-rag-backend/actions)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+
 Production-ready RAG chatbot backend using FastAPI + Claude API + ChromaDB.
 
 ## Features
@@ -81,4 +87,21 @@ backend/
     ├── parser.py
     └── chunker.py
 ```
+
+## Testing
+
+Run tests with coverage:
+```bash
+pytest tests/ -v --cov=. --cov-report=html
+```
+
+Coverage target: 70%+
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## 🔑 Keywords
+
+**FastAPI**, **Claude Sonnet 4**, **RAG**, **ChromaDB**, **vector search**, **production-ready**, **Railway**, **Kubernetes**, **Docker**, **Python**, **async**, **document intelligence**, **embeddings**, **semantic search**, **source citations**, **API**, **backend**, **LLM**, **retrieval-augmented generation**
 

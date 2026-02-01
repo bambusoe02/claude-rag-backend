@@ -128,7 +128,7 @@ async def startup_event():
     if os.getenv("OPENAI_API_KEY"):
         logger.info("✅ OPENAI_API_KEY found - will use OpenAI embeddings")
     else:
-        logger.info("ℹ️  OPENAI_API_KEY not set - will use sentence-transformers (local, free embeddings)")
+        logger.info("ℹ️  OPENAI_API_KEY not set - will use hash-based embeddings (lightweight, no API key required)")
 
 # Import routers (after health check is defined)
 try:

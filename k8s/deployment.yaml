@@ -25,6 +25,7 @@ spec:
       containers:
         - name: claude-rag-backend
           image: bambusoe02/claude-rag-backend:latest
+          imagePullPolicy: Never  # Use local image in minikube
           ports:
             - containerPort: 8000
               protocol: TCP
@@ -41,11 +42,6 @@ spec:
                 secretKeyRef:
                   name: claude-rag-secrets
                   key: ANTHROPIC_API_KEY
-            - name: OPENAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: claude-rag-secrets
-                  key: OPENAI_API_KEY
           
           # Resource limits
           resources:
